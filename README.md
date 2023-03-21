@@ -1,2 +1,2 @@
-# Interctive-simulation-platform
+# Interactive-simulation-platform
 Using First generation IbMs to simulate Emergence phenomenon
