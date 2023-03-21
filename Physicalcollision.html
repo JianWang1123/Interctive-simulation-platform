@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<!-- This is canvas setting -->
+
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>XY Model Simulation</title>
+  <style>
+    /* Add some basic styling */
+    body {
+        display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    #simulationCanvas {
+      background-color: #f0f0f0;
+    }
+    #controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+    }
+    label {
+      margin-bottom: 5px;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="simulationCanvas" width="800" height="800"></canvas>
+
+<div id="controls">
+  <label for="numParticles">Number of Particles:</label>
+  <input type="range" id="numParticles" name="numParticles" min="1" max="500" value="100" step="1">
+  
+  <label for="particleSize">Particle Size:</label>
+  <input type="range" id="particleSize" name="particleSize" min="1" max="20" value="5" step="1">
+
+  <label for="noise">Noise:</label>
+  <input type="range" id="noise" name="noise" min="0" max="1" value="0" step="0.01">
+
+  <label for="interactionRadius">Interaction Radius:</label>
+  <input type="range" id="interactionRadius" name="interactionRadius" min="1" max="50" value="10" step="1">
+
+  <label for="speed">Speed:</label>
+  <input type="range" id="speed" name="speed" min="0" max="10" value="1" step="0.1"> 
+
+  <label for="temperature">Speed:</label>
+  <input type="range" id="temperature" name="temperature" min="0" max="100" value="20" step="1"> 
+
+</div>
+<script>
+const canvas = document.getElementById('simulationCanvas');
+const ctx = canvas.getContext('2d');
+let particleNumber = document.getElementById('numParticles').value;
+let temperature = document.getElementById('temperature').value;
+let speed = document.getElementById('speed').value;
+let interactionRadius = document.getElementById('interactionRadius').value;
+let noise = document.getElementById('noise').value;
+let particleSize = document.getElementById('particleSize').value;
+
+// Initialize the remaining parameters
+// Add event listeners for the sliders to update the corresponding variables when their values change
+document.getElementById('numParticles').addEventListener('input', (event) => {
+  particleNumber = parseInt(event.target.value);
+  initializeParticles();
+});
+
+document.getElementById('temperature').addEventListener('input', (event) => {
+  temperature = parseFloat(event.target.value);
+});
+
+document.getElementById('speed').addEventListener('input', (event) => {
+  speed = parseFloat(event.target.value);
+});
+
+document.getElementById('interactionRadius').addEventListener('input', (event) => {
+  interactionRadius = parseFloat(event.target.value);
+});
+
+document.getElementById('noise').addEventListener('input', (event) => {
+  noise = parseFloat(event.target.value);
+});
+
+document.getElementById('particleSize').addEventListener('input', (event) => {
+  particleSize = parseFloat(event.target.value);
+});
+
+
+const particles = [];
+class Particle {
+   //constructor
+   constructor(x, y, size) {
+    this.position = { x, y };
+    this.velocity = { x: 0, y: 0 };
+    this.size = size;
+  }
+  // render particles in canvas
+  render(ctx) {
+    ctx.beginPath();
+    ctx.arc(this.position.x, this.position.y, this.size, 0, 2 * Math.PI);
+    ctx.fillStyle = 'rgba(0, 0, 0, 1)';
+    ctx.fill();
+  }
+  // render particles in canvas
+  //constructor
+
+  update(particles, speed, interactionRadius, noise, temperature) {
+    // Calculate the interaction and repulsion forces
+    // ... as before ...
+    const interactionForce={x:0, y:0};
+    particles.forEach((other) => {
+    if (other === this) return; // Skip the current particle
+
+    const dx = other.position.x - this.position.x;
+    const dy = other.position.y - this.position.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance < interactionRadius) {
+      const angle = Math.atan2(dy, dx);
+      interactionForce.x += Math.cos(angle);
+      interactionForce.y += Math.sin(angle);
+    }
+  });
+
+    // Update the particle's velocity
+    this.velocity.x += interactionForce.x * speed;
+    this.velocity.y += interactionForce.y * speed;
+
+    // Add temperature and noise effects
+    const randomAngle = Math.random() * 2 * Math.PI;
+    this.velocity.x += Math.cos(randomAngle) * temperature * noise;
+    this.velocity.y += Math.sin(randomAngle) * temperature * noise;
+
+    // Update the particle's position
+    this.position.x += this.velocity.x;
+    this.position.y += this.velocity.y;
+
+    // Handle boundary conditions
+    handleBoundaryConditions(this, canvas.width, canvas.height);
+  }
+}
+
+function handleBoundaryConditions(particle, canvasWidth, canvasHeight) {
+  // Check for collision with the left or right boundary
+  if (particle.position.x - particle.size < 0 || particle.position.x + particle.size > canvas.width) {
+    particle.velocity.x *= -1;
+    particle.position.x = particle.position.x < particle.size ? particle.size : canvas.width - particle.size;
+  }
+
+  // Check for collision with the top or bottom boundary
+  if (particle.position.y - particle.size < 0 || particle.position.y + particle.size > canvas.height) {
+    particle.velocity.y *= -1;
+    particle.position.y = particle.position.y < particle.size ? particle.size : canvas.height - particle.size;
+  }
+}
+
+
+function initializeParticles() {
+    particles.length= 0;
+    for (let i = 0; i < particleNumber; i++) {
+    const x = Math.random() * canvas.width;
+    const y = Math.random() * canvas.height;
+    const size = particleSize/* set particle size based on the parameter */;
+    const particle = new Particle(x, y, size);
+    particles.push(particle);
+  }
+}
+
+function runSimulation() {
+  // Clear the canvas
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Update and render the particles
+  particles.forEach((particle) => {
+    particle.update(particles, speed, interactionRadius, noise, temperature);
+    particle.render(ctx);
+  });
+
+  // Request the next frame
+  requestAnimationFrame(runSimulation);
+}
+
+initializeParticles();
+runSimulation();
+</script>
+</body>
+</html>
